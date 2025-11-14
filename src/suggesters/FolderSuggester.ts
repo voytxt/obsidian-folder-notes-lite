@@ -4,64 +4,60 @@ import { TFolder, type TAbstractFile } from 'obsidian';
 import { TextInputSuggest } from './Suggest';
 import type FolderNotesPlugin from '../main';
 export enum FileSuggestMode {
-    TemplateFiles,
-    ScriptFiles,
+  TemplateFiles,
+  ScriptFiles,
 }
 
 export class FolderSuggest extends TextInputSuggest<TFolder> {
-	constructor(
-        public inputEl: HTMLInputElement,
-        plugin: FolderNotesPlugin,
-		private whitelistSuggester: boolean,
-		public folder?: TFolder,
-	) {
-		super(inputEl, plugin);
-	}
+  constructor(
+    public inputEl: HTMLInputElement,
+    plugin: FolderNotesPlugin,
+    private whitelistSuggester: boolean,
+    public folder?: TFolder,
+  ) {
+    super(inputEl, plugin);
+  }
 
+  get_error_msg(mode: FileSuggestMode): string {
+    switch (mode) {
+      case FileSuggestMode.TemplateFiles:
+        return "Templates folder doesn't exist";
+      case FileSuggestMode.ScriptFiles:
+        return "User Scripts folder doesn't exist";
+    }
+  }
 
-	get_error_msg(mode: FileSuggestMode): string {
-		switch (mode) {
-			case FileSuggestMode.TemplateFiles:
-				return 'Templates folder doesn\'t exist';
-			case FileSuggestMode.ScriptFiles:
-				return 'User Scripts folder doesn\'t exist';
-		}
-	}
+  getSuggestions(input_str: string): TFolder[] {
+    const folders: TFolder[] = [];
+    const lower_input_str = input_str.toLowerCase();
+    let files: TAbstractFile[] = [];
+    if (this.folder) {
+      files = this.folder.children;
+    } else {
+      const MAX_FILE_SUGGESTIONS = 100;
+      files = this.plugin.app.vault.getAllLoadedFiles().slice(0, MAX_FILE_SUGGESTIONS);
+    }
+    files.forEach((folder: TAbstractFile) => {
+      if (
+        folder instanceof TFolder &&
+        folder.path.toLowerCase().contains(lower_input_str) &&
+        (!this.plugin.settings.excludeFolders.find((f) => f.path === folder.path) ||
+          this.whitelistSuggester)
+      ) {
+        folders.push(folder);
+      }
+    });
 
-	getSuggestions(input_str: string): TFolder[] {
-		const folders: TFolder[] = [];
-		const lower_input_str = input_str.toLowerCase();
-		let files: TAbstractFile[] = [];
-		if (this.folder) {
-			files = this.folder.children;
-		} else {
-			const MAX_FILE_SUGGESTIONS = 100;
-			files = this.plugin.app.vault.getAllLoadedFiles().slice(0, MAX_FILE_SUGGESTIONS);
-		}
-		files.forEach((folder: TAbstractFile) => {
-			if (
-				folder instanceof TFolder &&
-				folder.path.toLowerCase().contains(lower_input_str) &&
-				(
-					!this.plugin.settings.excludeFolders.find(
-						(f) => f.path === folder.path,
-					) || this.whitelistSuggester
-				)
-			) {
-				folders.push(folder);
-			}
-		});
+    return folders;
+  }
 
-		return folders;
-	}
+  renderSuggestion(folder: TFolder, el: HTMLElement): void {
+    el.setText(folder.path);
+  }
 
-	renderSuggestion(folder: TFolder, el: HTMLElement): void {
-		el.setText(folder.path);
-	}
-
-	selectSuggestion(folder: TFolder): void {
-		this.inputEl.value = folder.path;
-		this.inputEl.trigger('input');
-		this.close();
-	}
+  selectSuggestion(folder: TFolder): void {
+    this.inputEl.value = folder.path;
+    this.inputEl.trigger('input');
+    this.close();
+  }
 }

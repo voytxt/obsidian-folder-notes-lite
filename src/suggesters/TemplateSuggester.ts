@@ -2,91 +2,90 @@ import { TFile, TFolder, Vault, AbstractInputSuggest, type TAbstractFile } from 
 import type FolderNotesPlugin from '../main';
 import { getTemplatePlugins } from 'src/template';
 export enum FileSuggestMode {
-	TemplateFiles,
-	ScriptFiles,
+  TemplateFiles,
+  ScriptFiles,
 }
 
 export class TemplateSuggest extends AbstractInputSuggest<TFile> {
-	constructor(
-		public inputEl: HTMLInputElement,
-		public plugin: FolderNotesPlugin,
-	) {
-		super(plugin.app, inputEl);
-	}
+  constructor(
+    public inputEl: HTMLInputElement,
+    public plugin: FolderNotesPlugin,
+  ) {
+    super(plugin.app, inputEl);
+  }
 
+  get_error_msg(mode: FileSuggestMode): string {
+    switch (mode) {
+      case FileSuggestMode.TemplateFiles:
+        return "Templates folder doesn't exist";
+      case FileSuggestMode.ScriptFiles:
+        return "User Scripts folder doesn't exist";
+    }
+  }
 
-	get_error_msg(mode: FileSuggestMode): string {
-		switch (mode) {
-			case FileSuggestMode.TemplateFiles:
-				return 'Templates folder doesn\'t exist';
-			case FileSuggestMode.ScriptFiles:
-				return 'User Scripts folder doesn\'t exist';
-		}
-	}
+  getSuggestions(input_str: string): TFile[] {
+    const { templateFolder, templaterPlugin } = getTemplatePlugins(this.app);
 
-	getSuggestions(input_str: string): TFile[] {
-		const { templateFolder, templaterPlugin } = getTemplatePlugins(this.app);
+    let files: TFile[] = [];
+    const lower_input_str = input_str.toLowerCase();
 
-		let files: TFile[] = [];
-		const lower_input_str = input_str.toLowerCase();
+    if ((!templateFolder || templateFolder.trim() === '') && !templaterPlugin) {
+      files = this.plugin.app.vault
+        .getFiles()
+        .filter((file) => file.path.toLowerCase().includes(lower_input_str));
+    } else {
+      let folder: TFolder | TAbstractFile | null = null;
+      if (templaterPlugin) {
+        folder = this.plugin.app.vault.getAbstractFileByPath(
+          (
+            templaterPlugin as unknown as {
+              plugin?: { settings?: { templates_folder?: string } };
+            }
+          ).plugin?.settings?.templates_folder as string,
+        );
+        if (!(folder instanceof TFolder)) {
+          return [
+            {
+              path: '',
+              name:
+                // eslint-disable-next-line max-len
+                'You need to set the Templates folder in the Templater settings first.',
+            } as TFile,
+          ];
+        }
+      } else if (templateFolder) {
+        folder = this.plugin.app.vault.getAbstractFileByPath(templateFolder) as TFolder;
+      }
 
-		if ((!templateFolder || templateFolder.trim() === '') && !templaterPlugin) {
-			files = this.plugin.app.vault.getFiles().filter((file) =>
-				file.path.toLowerCase().includes(lower_input_str),
-			);
-		} else {
-			let folder: TFolder | TAbstractFile | null = null;
-			if (templaterPlugin) {
-				folder = this.plugin.app.vault.getAbstractFileByPath(
-					(templaterPlugin as unknown as {
-						plugin?: { settings?: { templates_folder?: string } }
-					}).plugin?.settings?.templates_folder as string,
-				);
-				if (!(folder instanceof TFolder)) {
-					return [
-						{
-							path: '',
-							name:
-								// eslint-disable-next-line max-len
-								'You need to set the Templates folder in the Templater settings first.',
-						} as TFile,
-					];
-				}
-			} else if (templateFolder) {
-				folder = this.plugin.app.vault.getAbstractFileByPath(templateFolder) as TFolder;
-			}
+      if (!(folder instanceof TFolder)) {
+        return [];
+      }
 
-			if (!(folder instanceof TFolder)) {
-				return [];
-			}
+      Vault.recurseChildren(folder, (file: TAbstractFile) => {
+        if (file instanceof TFile && file.path.toLowerCase().includes(lower_input_str)) {
+          files.push(file);
+        }
+      });
+    }
 
-			Vault.recurseChildren(folder, (file: TAbstractFile) => {
-				if (file instanceof TFile && file.path.toLowerCase().includes(lower_input_str)) {
-					files.push(file);
-				}
-			});
-		}
+    return files;
+  }
 
-		return files;
-	}
+  renderSuggestion(file: TFile, el: HTMLElement): void {
+    const { templateFolder, templaterPlugin } = getTemplatePlugins(this.app);
 
+    if ((!templateFolder || templateFolder.trim() === '') && !templaterPlugin) {
+      el.setText(`${file.parent?.path !== '/' ? file.parent?.path + '/' : ''}${file.name}`);
+    } else {
+      el.setText(file.name);
+    }
+  }
 
-	renderSuggestion(file: TFile, el: HTMLElement): void {
-		const { templateFolder, templaterPlugin } = getTemplatePlugins(this.app);
-
-		if ((!templateFolder || templateFolder.trim() === '') && !templaterPlugin) {
-			el.setText(`${file.parent?.path !== '/' ? file.parent?.path + '/' : ''}${file.name}`);
-		} else {
-			el.setText(file.name);
-		}
-	}
-
-
-	selectSuggestion(file: TFile): void {
-		this.inputEl.value = file.name.replace('.md', '');
-		this.inputEl.trigger('input');
-		this.plugin.settings.templatePath = file.path;
-		this.plugin.saveSettings();
-		this.close();
-	}
+  selectSuggestion(file: TFile): void {
+    this.inputEl.value = file.name.replace('.md', '');
+    this.inputEl.trigger('input');
+    this.plugin.settings.templatePath = file.path;
+    this.plugin.saveSettings();
+    this.close();
+  }
 }

@@ -1,32 +1,33 @@
 {
-	"name": "folder-notes",
-	"version": "1.0.1",
-	"description": "Adds Folder Notes to the default file tree.",
-	"main": "main.js",
-	"scripts": {
-		"fn-dev": "node esbuild.config.mjs",
-		"dev": "npm run fn-dev",
-		"fn-build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"fv-build": "tsc -noEmit -skipLibCheck && node ./src/obsidian-folder-overview/esbuild.config.mjs production",
-		"folder-overview": "node ./src/obsidian-folder-overview/esbuild.config.mjs",
-		"fv-dev": "npm run folder-overview"
-	},
-	"keywords": [],
-	"author": "Lost Paul",
-	"license": "GPL-3.0-or-later",
-	"devDependencies": {
-		"@types/node": "^16.11.6",
-		"builtin-modules": "3.3.0",
-		"esbuild": "0.14.47",
-		"front-matter-plugin-api-provider": "^0.1.4-alpha",
-		"globals": "^16.3.0",
-		"jiti": "^2.5.1",
-		"obsidian": "latest",
-		"obsidian-typings": "^2.2.0",
-		"tslib": "2.4.0",
-		"typescript": "^4.8.4"
-	},
-	"dependencies": {
-		"@popperjs/core": "^2.11.6"
-	}
+  "name": "folder-notes",
+  "version": "1.0.1",
+  "description": "Adds Folder Notes to the default file tree.",
+  "main": "main.js",
+  "scripts": {
+    "fn-dev": "node esbuild.config.mjs",
+    "dev": "npm run fn-dev",
+    "fn-build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "fv-build": "tsc -noEmit -skipLibCheck && node ./src/obsidian-folder-overview/esbuild.config.mjs production",
+    "folder-overview": "node ./src/obsidian-folder-overview/esbuild.config.mjs",
+    "fv-dev": "npm run folder-overview",
+    "format": "pnpx prettier --write ."
+  },
+  "keywords": [],
+  "author": "Lost Paul",
+  "license": "GPL-3.0-or-later",
+  "devDependencies": {
+    "@types/node": "^16.11.6",
+    "builtin-modules": "3.3.0",
+    "esbuild": "0.14.47",
+    "front-matter-plugin-api-provider": "^0.1.4-alpha",
+    "globals": "^16.3.0",
+    "jiti": "^2.5.1",
+    "obsidian": "latest",
+    "obsidian-typings": "^2.2.0",
+    "tslib": "2.4.0",
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "@popperjs/core": "^2.11.6"
+  }
 }
