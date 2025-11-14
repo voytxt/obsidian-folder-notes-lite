@@ -1,6 +1,6 @@
 import { TFolder, TFile, type TAbstractFile } from 'obsidian';
 import type FolderNotesPlugin from 'src/main';
-import { getFolderNote, getFolder, deleteFolderNote } from 'src/functions/folderNoteFunctions';
+import { getFolderNote, getFolder } from 'src/functions/folderNoteFunctions';
 import {
   removeCSSClassFromFileExplorerEL,
   addCSSClassToFileExplorerEl,
@@ -18,30 +18,26 @@ export function handleDelete(file: TAbstractFile, plugin: FolderNotesPlugin): vo
     }
   }
 
+  // if it's a file
   if (file instanceof TFile) {
     const folderNoteFolder = getFolder(plugin, file);
-    if (!folderNoteFolder) {
-      return;
-    }
+    if (!folderNoteFolder) return;
+
     const folderNote = getFolderNote(plugin, folderNoteFolder.path);
-    if (folderNote) {
-      return;
-    }
+    if (folderNote) return;
+
     removeCSSClassFromFileExplorerEL(folderNoteFolder.path, 'has-folder-note', false, plugin);
     removeCSSClassFromFileExplorerEL(folderNoteFolder.path, 'only-has-folder-note', true, plugin);
+
     hideFolderNoteInFileExplorer(folderNoteFolder.path, plugin);
   }
 
-  if (!(file instanceof TFolder)) {
-    return;
+  // if it's a folder
+  else {
+    const folderNote = getFolderNote(plugin, file.path);
+
+    if (folderNote) {
+      removeCSSClassFromFileExplorerEL(folderNote.path, 'is-folder-note', false, plugin);
+    }
   }
-  const folderNote = getFolderNote(plugin, file.path);
-  if (!folderNote) {
-    return;
-  }
-  removeCSSClassFromFileExplorerEL(folderNote.path, 'is-folder-note', false, plugin);
-  if (!plugin.settings.syncDelete) {
-    return;
-  }
-  deleteFolderNote(plugin, folderNote, false);
 }

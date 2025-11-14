@@ -1,8 +1,7 @@
-import { Keymap, Platform } from 'obsidian';
+import { Keymap } from 'obsidian';
 import type FolderNotesPlugin from 'src/main';
 import { getFolderNote } from 'src/functions/folderNoteFunctions';
-import { handleViewHeaderClick } from './handleClick';
-import { getExcludedFolder } from 'src/ExcludeFolders/functions/folderFunctions';
+import { handleViewHeaderClick } from './handleViewHeaderClick';
 import { updateCSSClassesForFolder } from 'src/functions/styleFunctions';
 
 let fileExplorerMutationObserver: MutationObserver | null = null;
@@ -10,15 +9,22 @@ let fileExplorerMutationObserver: MutationObserver | null = null;
 export function registerFileExplorerObserver(plugin: FolderNotesPlugin): void {
   // Run once on initial layout
   plugin.app.workspace.onLayoutReady(() => {
-    initializeFolderNoteFeatures(plugin);
+    console.log('layout ready');
+
+    initializeAllFolderTitles(plugin);
+    observeFolderTitleMutations(plugin);
     initializeBreadcrumbs(plugin);
   });
 
   // Re-run when layout changes (e.g. File Explorer is reopened)
   plugin.registerEvent(
     plugin.app.workspace.on('layout-change', () => {
-      initializeFolderNoteFeatures(plugin);
+      console.log('layout change');
 
+      initializeAllFolderTitles(plugin);
+      observeFolderTitleMutations(plugin);
+
+      // @ts-ignore idk
       const activeLeaf = plugin.app.workspace.getActiveFileView()?.containerEl;
       if (!activeLeaf) return;
 
@@ -35,11 +41,6 @@ export function unregisterFileExplorerObserver(): void {
     fileExplorerMutationObserver.disconnect();
     fileExplorerMutationObserver = null;
   }
-}
-
-function initializeFolderNoteFeatures(plugin: FolderNotesPlugin): void {
-  initializeAllFolderTitles(plugin);
-  observeFolderTitleMutations(plugin);
 }
 
 function initializeBreadcrumbs(plugin: FolderNotesPlugin): void {
@@ -121,15 +122,6 @@ async function setupFolderTitle(
   folderTitle.dataset.initialized = 'true';
   await updateCSSClassesForFolder(folderPath, plugin);
 
-  if (plugin.settings.frontMatterTitle.enabled) {
-    plugin.fmtpHandler?.fmptUpdateFolderName(
-      { id: '', result: false, path: folderPath, pathOnly: false },
-      false,
-    );
-  }
-
-  if (Platform.isMobile && plugin.settings.disableOpenFolderNoteOnClick) return;
-
   plugin.registerDomEvent(folderTitle, 'pointerover', (event: MouseEvent) => {
     plugin.hoveredElement = folderTitle;
     plugin.mouseEvent = event;
@@ -170,27 +162,15 @@ async function updateFolderNamesInPath(
     path += '/';
     const folderPath = path.slice(0, -TRAILING_SLASH_LENGTH);
 
-    const excludedFolder = getExcludedFolder(plugin, folderPath, true);
-    if (excludedFolder?.disableFolderNote) return;
     const folderNote = getFolderNote(plugin, folderPath);
     if (!folderNote) return;
     if (folderNote) breadcrumb.classList.add('has-folder-note');
     breadcrumb?.setAttribute('data-path', path.slice(0, -TRAILING_SLASH_LENGTH));
-    if (!breadcrumb.onclick) {
-      breadcrumb.addEventListener(
-        'click',
-        (e) => {
-          handleViewHeaderClick(e as MouseEvent, plugin);
-        },
-        { capture: true },
-      );
-    }
 
-    if (plugin.settings.frontMatterTitle.enabled) {
-      plugin.fmtpHandler?.fmptUpdateFolderName(
-        { id: '', result: false, path: folderPath, pathOnly: true, breadcrumb: breadcrumb },
-        true,
-      );
+    if (!breadcrumb.onclick) {
+      breadcrumb.addEventListener('click', (e) => handleViewHeaderClick(e as MouseEvent, plugin), {
+        capture: true,
+      });
     }
   });
 }
