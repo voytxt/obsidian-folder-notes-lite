@@ -1,7 +1,6 @@
-import { type TAbstractFile, Plugin, TFile, TFolder, Keymap } from 'obsidian';
-import { getFolderNote, getFolder } from './folderNoteFunctions';
-import { handleFileExplorerClick } from './events';
+import { type TAbstractFile, Plugin, TFile, TFolder } from 'obsidian';
 import { updateBreadcrumbs, updateFileTreeTitles } from './update';
+import { getFolderNote, getFolderPathFromString } from './utils';
 
 interface FolderNotesSettings {
   storageLocation: 'insideFolder' | 'parentFolder';
@@ -9,10 +8,6 @@ interface FolderNotesSettings {
 
 export default class FolderNotesPlugin extends Plugin {
   settings: FolderNotesSettings;
-  activeFolderDom: HTMLElement | null;
-  hoveredElement: HTMLElement | null = null;
-  mouseEvent: MouseEvent | null = null;
-  hoverLinkTriggered = false;
 
   async onload(): Promise<void> {
     console.log('loading folder notes plugin');
@@ -22,34 +17,8 @@ export default class FolderNotesPlugin extends Plugin {
     await this.saveData(this.settings);
 
     document.body.classList.add('folder-notes-plugin');
+    overrideRevealInFolder(this);
 
-    this.app.workspace.onLayoutReady(this.onLayoutReady.bind(this));
-
-    this.registerDomEvent(window, 'keydown', (event: KeyboardEvent) => {
-      const { hoveredElement } = this;
-      if (this.hoverLinkTriggered) return;
-      if (!hoveredElement) return;
-      if (!Keymap.isModEvent(event)) return;
-
-      const folderPath = hoveredElement?.parentElement?.getAttribute('data-path') || '';
-      const folderNote = getFolderNote(this, folderPath);
-      if (!folderNote) return;
-
-      this.app.workspace.trigger('hover-link', {
-        event: this.mouseEvent,
-        source: 'preview',
-        hoverParent: {
-          file: folderNote,
-        },
-        targetEl: hoveredElement,
-        linktext: folderNote?.basename,
-        sourcePath: folderNote?.path,
-      });
-      this.hoverLinkTriggered = true;
-    });
-  }
-
-  onLayoutReady(): void {
     this.registerEvent(
       // TODO: something else than 'layout-change'
       this.app.workspace.on('layout-change', () => {
@@ -64,34 +33,65 @@ export default class FolderNotesPlugin extends Plugin {
       (event: MouseEvent) => handleFileExplorerClick(this, event),
       true,
     );
-
-    // @ts-ignore internal, for revealing the file when pressing ctrl+zero
-    const fileExplorerPlugin = this.app.internalPlugins.getEnabledPluginById('file-explorer');
-    if (fileExplorerPlugin) {
-      const originalRevealInFolder = fileExplorerPlugin.revealInFolder.bind(fileExplorerPlugin);
-
-      fileExplorerPlugin.revealInFolder = (file: TAbstractFile): void => {
-        if (file instanceof TFile) {
-          const folder = getFolder(this, file);
-          if (folder instanceof TFolder) {
-            const folderNote = getFolderNote(this, folder.path);
-
-            if (!folderNote || folderNote.path !== file.path) {
-              return originalRevealInFolder.call(fileExplorerPlugin, file);
-            }
-
-            originalRevealInFolder.call(fileExplorerPlugin, folder);
-
-            return;
-          }
-        }
-
-        return originalRevealInFolder.call(fileExplorerPlugin, file);
-      };
-    }
   }
 
   onunload(): void {
     document.body.classList.remove('folder-notes-plugin');
   }
+}
+
+function handleFileExplorerClick(plugin: FolderNotesPlugin, event: MouseEvent): void {
+  if (!event.ctrlKey) return;
+
+  const folderPath = (event.target as HTMLElement)
+    .closest('.nav-folder-title')
+    ?.getAttribute('data-path');
+  const folderNote = getFolderNote(plugin, folderPath!);
+  if (folderNote === null) return;
+
+  // we don't want to open the folder note contents in the file explorer
+  event.stopImmediatePropagation();
+
+  plugin.app.workspace.getLeaf().openFile(folderNote);
+}
+
+function overrideRevealInFolder(plugin: FolderNotesPlugin) {
+  // @ts-ignore internal, for revealing the file when pressing ctrl+zero
+  const fileExplorerPlugin = plugin.app.internalPlugins.getEnabledPluginById('file-explorer') as {
+    revealInFolder: (file: TAbstractFile) => void;
+  };
+
+  const originalRevealInFolder = fileExplorerPlugin.revealInFolder.bind(fileExplorerPlugin) as (
+    file: TAbstractFile,
+  ) => void;
+
+  fileExplorerPlugin.revealInFolder = (file: TAbstractFile): void => {
+    if (file instanceof TFile) {
+      const folder = getFolder(plugin, file);
+      if (folder !== null) {
+        return originalRevealInFolder.call(fileExplorerPlugin, folder);
+      }
+    }
+
+    return originalRevealInFolder.call(fileExplorerPlugin, file);
+  };
+}
+
+function getFolder(plugin: FolderNotesPlugin, file: TFile): TFolder | null {
+  let folderName = file.basename;
+  if ('{{folder_name}}' === file.basename && plugin.settings.storageLocation === 'insideFolder') {
+    folderName = file.parent?.name ?? '';
+  }
+  if (!folderName) return null;
+  let folderPath = getFolderPathFromString(file.path);
+
+  if (plugin.settings.storageLocation === 'parentFolder') {
+    if (folderPath.trim() === '' || folderPath === '/') {
+      folderPath = folderName;
+    } else {
+      folderPath = `${folderPath}/${folderName}`;
+    }
+  }
+
+  return plugin.app.vault.getFolderByPath(folderPath);
 }
