@@ -20,9 +20,6 @@ importers:
       globals:
         specifier: ^16.3.0
         version: 16.5.0
-      jiti:
-        specifier: ^2.5.1
-        version: 2.6.1
       obsidian:
         specifier: latest
         version: 1.10.3(@codemirror/state@6.5.0)(@codemirror/view@6.38.6)
@@ -228,10 +225,6 @@ packages:
     resolution: {integrity: sha512-c/c15i26VrJ4IRt5Z89DnIzCGDn9EcebibhAOjw5ibqEHsE1wLUgkPn9RDmNcUKyU87GeaL633nyJ+pplFR2ZQ==}
     engines: {node: '>=18'}
 
-  jiti@2.6.1:
-    resolution: {integrity: sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ==}
-    hasBin: true
-
   moment@2.29.4:
     resolution: {integrity: sha512-5LC9SOxjSc2HF6vO2CyuTDNivEdoz2IvyJJGj6X8DJ0eFyfszE0QiEd+iXmBvUP3WHxSjFH/vIsA0EN00cgr8w==}
 
@@ -399,8 +392,6 @@ snapshots:
       '@esbuild/win32-x64': 0.27.0
 
   globals@16.5.0: {}
-
-  jiti@2.6.1: {}
 
   moment@2.29.4: {}
 

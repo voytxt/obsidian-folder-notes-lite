@@ -1,7 +1,6 @@
 {
-  "name": "folder-notes",
-  "version": "1.0.1",
-  "description": "Adds Folder Notes to the default file tree.",
+  "name": "folder-notes-lite",
+  "version": "1.0.0",
   "main": "main.js",
   "scripts": {
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
@@ -12,7 +11,6 @@
     "builtin-modules": "5.0.0",
     "esbuild": "0.27.0",
     "globals": "^16.3.0",
-    "jiti": "^2.5.1",
     "obsidian": "latest",
     "tslib": "2.8.1",
     "typescript": "^5.9.3"

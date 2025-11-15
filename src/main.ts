@@ -1,23 +1,15 @@
 import { type TAbstractFile, Plugin, TFile, TFolder, Keymap } from 'obsidian';
-import { type FolderNotesSettings, DEFAULT_SETTINGS } from './settings';
-import type { FileExplorerWorkspaceLeaf } from './globals';
-import {
-  registerFileExplorerObserver,
-  unregisterFileExplorerObserver,
-} from './events/MutationObserver';
-import { getFolderNote, getFolder } from './functions/folderNoteFunctions';
-import {
-  addCSSClassToFileExplorerEl,
-  refreshAllFolderStyles,
-  setActiveFolder,
-  removeActiveFolder,
-} from './functions/styleFunctions';
-import { handleFileExplorerClick } from './events/handleFileExplorerClick';
+import { getFolderNote, getFolder } from './folderNoteFunctions';
+import { handleFileExplorerClick } from './events';
+import { updateBreadcrumbs, updateFileTreeTitles } from './update';
+
+interface FolderNotesSettings {
+  storageLocation: 'insideFolder' | 'parentFolder';
+}
 
 export default class FolderNotesPlugin extends Plugin {
   settings: FolderNotesSettings;
   activeFolderDom: HTMLElement | null;
-  activeFileExplorer: FileExplorerWorkspaceLeaf;
   hoveredElement: HTMLElement | null = null;
   mouseEvent: MouseEvent | null = null;
   hoverLinkTriggered = false;
@@ -25,17 +17,9 @@ export default class FolderNotesPlugin extends Plugin {
   async onload(): Promise<void> {
     console.log('loading folder notes plugin');
 
-    // load settings
-    {
-      const data = await this.loadData();
-
-      this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
-      if (!this.settings.oldFolderNoteName) {
-        this.settings.oldFolderNoteName = this.settings.folderNoteName;
-      }
-
-      this.saveSettings();
-    }
+    // load & save settings
+    this.settings = await this.loadData();
+    await this.saveData(this.settings);
 
     document.body.classList.add('folder-notes-plugin');
 
@@ -63,36 +47,21 @@ export default class FolderNotesPlugin extends Plugin {
       });
       this.hoverLinkTriggered = true;
     });
-
-    this.registerEvent(
-      this.app.workspace.on('file-open', async (openFile: TFile | null) => {
-        removeActiveFolder(this);
-
-        if (!openFile || !openFile.basename) return;
-
-        const folder = getFolder(this, openFile);
-        if (!folder) return;
-
-        const folderNote = getFolderNote(this, folder.path);
-        if (!folderNote) return;
-
-        if (folderNote.path !== openFile.path) return;
-
-        setActiveFolder(folder.path, this);
-      }),
-    );
   }
 
   onLayoutReady(): void {
-    // @ts-ignore internal
-    if (!this._loaded) return;
-
-    registerFileExplorerObserver(this);
+    this.registerEvent(
+      // TODO: something else than 'layout-change'
+      this.app.workspace.on('layout-change', () => {
+        updateFileTreeTitles(this);
+        updateBreadcrumbs(this);
+      }),
+    );
 
     this.registerDomEvent(
       document,
       'click',
-      (evt: MouseEvent) => handleFileExplorerClick(this, evt),
+      (event: MouseEvent) => handleFileExplorerClick(this, event),
       true,
     );
 
@@ -122,41 +91,7 @@ export default class FolderNotesPlugin extends Plugin {
     }
   }
 
-  isEmptyFolderNoteFolder(folder: TFolder): boolean {
-    // @ts-ignore internal
-    let attachmentFolderPath = this.app.vault.getConfig('attachmentFolderPath') as string;
-    const cleanAttachmentFolderPath = attachmentFolderPath?.replace('./', '') || '';
-    const attachmentsAreInRootFolder = attachmentFolderPath === './' || attachmentFolderPath === '';
-    const threshold = this.settings.storageLocation === 'insideFolder' ? 1 : 0;
-    attachmentFolderPath = `${folder.path}/${cleanAttachmentFolderPath}`;
-
-    if (folder.children.length === threshold) {
-      return true;
-    } else if (folder.children.length > threshold) {
-      if (attachmentsAreInRootFolder) {
-        return false;
-      } else if (this.app.vault.getAbstractFileByPath(attachmentFolderPath) instanceof TFolder) {
-        const attachmentFolder = this.app.vault.getAbstractFileByPath(attachmentFolderPath);
-        if (attachmentFolder instanceof TFolder && folder.children.length <= threshold + 1) {
-        }
-        return folder.children.length <= threshold + 1;
-      }
-      return false;
-    }
-    return true;
-  }
-
   onunload(): void {
-    unregisterFileExplorerObserver();
     document.body.classList.remove('folder-notes-plugin');
-    removeActiveFolder(this);
-  }
-
-  async saveSettings(reloadStyles?: boolean): Promise<void> {
-    await this.saveData(this.settings);
-    // cleanup any css if we need too
-    if (reloadStyles !== false) {
-      refreshAllFolderStyles(true, this);
-    }
   }
 }
