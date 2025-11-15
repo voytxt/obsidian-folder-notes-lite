@@ -7,7 +7,6 @@ import {
 } from './events/MutationObserver';
 import { getFolderNote, getFolder } from './functions/folderNoteFunctions';
 import { handleCreate } from './events/handleCreate';
-import { handleDelete } from './events/handleDelete';
 import {
   addCSSClassToFileExplorerEl,
   refreshAllFolderStyles,
@@ -77,10 +76,6 @@ export default class FolderNotesPlugin extends Plugin {
 
     this.registerEvent(
       this.app.vault.on('create', (file: TAbstractFile) => handleCreate(file, this)),
-    );
-
-    this.registerEvent(
-      this.app.vault.on('delete', (file: TAbstractFile) => handleDelete(file, this)),
     );
   }
 
