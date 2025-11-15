@@ -6,7 +6,6 @@ import {
   unregisterFileExplorerObserver,
 } from './events/MutationObserver';
 import { getFolderNote, getFolder } from './functions/folderNoteFunctions';
-import { handleCreate } from './events/handleCreate';
 import {
   addCSSClassToFileExplorerEl,
   refreshAllFolderStyles,
@@ -82,10 +81,6 @@ export default class FolderNotesPlugin extends Plugin {
         setActiveFolder(folder.path, this);
       }),
     );
-
-    this.registerEvent(
-      this.app.vault.on('create', (file: TAbstractFile) => handleCreate(file, this)),
-    );
   }
 
   onLayoutReady(): void {
@@ -133,13 +128,9 @@ export default class FolderNotesPlugin extends Plugin {
     const cleanAttachmentFolderPath = attachmentFolderPath?.replace('./', '') || '';
     const attachmentsAreInRootFolder = attachmentFolderPath === './' || attachmentFolderPath === '';
     const threshold = this.settings.storageLocation === 'insideFolder' ? 1 : 0;
-    if (folder.children.length === 0) {
-      addCSSClassToFileExplorerEl(folder.path, 'fn-empty-folder', false, this);
-    }
     attachmentFolderPath = `${folder.path}/${cleanAttachmentFolderPath}`;
 
     if (folder.children.length === threshold) {
-      addCSSClassToFileExplorerEl(folder.path, 'fn-empty-folder', false, this);
       return true;
     } else if (folder.children.length > threshold) {
       if (attachmentsAreInRootFolder) {
@@ -147,8 +138,6 @@ export default class FolderNotesPlugin extends Plugin {
       } else if (this.app.vault.getAbstractFileByPath(attachmentFolderPath) instanceof TFolder) {
         const attachmentFolder = this.app.vault.getAbstractFileByPath(attachmentFolderPath);
         if (attachmentFolder instanceof TFolder && folder.children.length <= threshold + 1) {
-          addCSSClassToFileExplorerEl(folder.path, 'fn-empty-folder', false, this);
-          addCSSClassToFileExplorerEl(folder.path, 'fn-has-attachment-folder', false, this);
         }
         return folder.children.length <= threshold + 1;
       }

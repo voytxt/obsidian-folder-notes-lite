@@ -32,25 +32,16 @@ export async function updateCSSClassesForFolder(
 
   const folderNote = getFolderNote(plugin, folder.path);
 
-  if (folder.children.length === 0) {
-    addCSSClassToFileExplorerEl(folder.path, 'fn-empty-folder', false, plugin);
-  }
-
   if (!folderNote) {
     removeCSSClassFromFileExplorerEL(folder?.path, 'has-folder-note', false, plugin);
-    removeCSSClassFromFileExplorerEL(folder?.path, 'only-has-folder-note', true, plugin);
     return;
   }
 
-  markFolderWithFolderNoteClasses(folder, plugin);
+  // mark file as folder note
+  addCSSClassToFileExplorerEl(folderNote.path, 'is-folder-note', false, plugin);
 
-  if (plugin.isEmptyFolderNoteFolder(folder) && getFolderNote(plugin, folder.path)) {
-    addCSSClassToFileExplorerEl(folder.path, 'only-has-folder-note', true, plugin);
-  } else {
-    removeCSSClassFromFileExplorerEL(folder.path, 'only-has-folder-note', true, plugin);
-  }
-
-  markFolderAndNoteWithClasses(folderNote, folder, plugin);
+  // mark folder with folder note classes
+  addCSSClassToFileExplorerEl(folder.path, 'has-folder-note', false, plugin);
 }
 
 /**
@@ -71,28 +62,6 @@ export async function updateCSSClassesForFolderNote(
   }
 
   updateCSSClassesForFolder(folder.path, plugin);
-}
-
-export function markFolderAndNoteWithClasses(
-  file: TFile,
-  folder: TFolder,
-  plugin: FolderNotesPlugin,
-): void {
-  markFileAsFolderNote(file, plugin);
-  markFolderWithFolderNoteClasses(folder, plugin);
-}
-
-export function markFolderWithFolderNoteClasses(folder: TFolder, plugin: FolderNotesPlugin): void {
-  addCSSClassToFileExplorerEl(folder.path, 'has-folder-note', false, plugin);
-  if (plugin.isEmptyFolderNoteFolder(folder) && getFolderNote(plugin, folder.path)) {
-    addCSSClassToFileExplorerEl(folder.path, 'only-has-folder-note', true, plugin);
-  } else {
-    removeCSSClassFromFileExplorerEL(folder.path, 'only-has-folder-note', true, plugin);
-  }
-}
-
-export function markFileAsFolderNote(file: TFile, plugin: FolderNotesPlugin): void {
-  addCSSClassToFileExplorerEl(file.path, 'is-folder-note', false, plugin);
 }
 
 /**
@@ -166,9 +135,8 @@ export function getFileExplorerElement(
   plugin: FolderNotesPlugin,
 ): HTMLElement | null {
   const fileExplorer = getFileExplorer(plugin);
-  if (!fileExplorer?.view?.fileItems) {
-    return null;
-  }
+  if (!fileExplorer?.view?.fileItems) return null;
+
   const fileExplorerItem = fileExplorer.view.fileItems?.[path];
   return fileExplorerItem?.selfEl ?? fileExplorerItem?.titleEl ?? null;
 }
