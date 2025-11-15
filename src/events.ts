@@ -39,9 +39,6 @@ export async function handleBreadcrumbClick(
     // open folder note
     plugin.app.workspace.getLeaf().openFile(folderNote);
 
-    // @ts-ignore internal
-    plugin.app.internalPlugins.getEnabledPluginById('file-explorer').revealInFolder(folderNote);
-
     return;
   }
 
