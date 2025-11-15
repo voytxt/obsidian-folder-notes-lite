@@ -195,7 +195,7 @@ export function setActiveFolder(folderPath: string, plugin: FolderNotesPlugin): 
 export function removeActiveFolder(plugin: FolderNotesPlugin): void {
   if (plugin.activeFolderDom) {
     plugin.activeFolderDom.removeClass('fn-is-active');
-    plugin.activeFolderDom?.removeClass('has-focus');
+    plugin.activeFolderDom.removeClass('has-focus');
     plugin.activeFolderDom = null;
   }
 }

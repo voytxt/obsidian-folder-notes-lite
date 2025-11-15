@@ -25,11 +25,20 @@ export default class FolderNotesPlugin extends Plugin {
 
   async onload(): Promise<void> {
     console.log('loading folder notes plugin');
-    await this.loadSettings();
-    this.saveSettings();
+
+    // load settings
+    {
+      const data = await this.loadData();
+
+      this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+      if (!this.settings.oldFolderNoteName) {
+        this.settings.oldFolderNoteName = this.settings.folderNoteName;
+      }
+
+      this.saveSettings();
+    }
 
     document.body.classList.add('folder-notes-plugin');
-    document.body.classList.add('hide-folder-note');
 
     this.app.workspace.onLayoutReady(this.onLayoutReady.bind(this));
 
@@ -102,15 +111,13 @@ export default class FolderNotesPlugin extends Plugin {
           const folder = getFolder(this, file);
           if (folder instanceof TFolder) {
             const folderNote = getFolderNote(this, folder.path);
+
             if (!folderNote || folderNote.path !== file.path) {
               return originalRevealInFolder.call(fileExplorerPlugin, file);
             }
-            document.body.classList.remove('hide-folder-note');
+
             originalRevealInFolder.call(fileExplorerPlugin, folder);
-            const FOLDER_REVEAL_DELAY = 100;
-            setTimeout(() => {
-              document.body.classList.add('hide-folder-note');
-            }, FOLDER_REVEAL_DELAY);
+
             return;
           }
         }
@@ -153,18 +160,7 @@ export default class FolderNotesPlugin extends Plugin {
   onunload(): void {
     unregisterFileExplorerObserver();
     document.body.classList.remove('folder-notes-plugin');
-    document.body.classList.remove('folder-note-underline');
-    document.body.classList.remove('hide-folder-note');
     removeActiveFolder(this);
-  }
-
-  async loadSettings(): Promise<void> {
-    const data = await this.loadData();
-
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
-    if (!this.settings.oldFolderNoteName) {
-      this.settings.oldFolderNoteName = this.settings.folderNoteName;
-    }
   }
 
   async saveSettings(reloadStyles?: boolean): Promise<void> {

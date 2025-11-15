@@ -10,11 +10,13 @@ export function handleFileExplorerClick(plugin: FolderNotesPlugin, evt: MouseEve
   const target = evt.target as HTMLElement;
   if (evt.shiftKey) return;
 
-  const { folderTitleEl } = getFolderTitleInfo(target);
+  const folderTitleEl = target.closest('.nav-folder-title') as HTMLElement | null;
   if (!folderTitleEl) return;
-  if (shouldIgnoreClickByWhitespaceOrCollapse(target)) return;
 
-  const folderPath = getValidFolderPath(folderTitleEl);
+  // should ignore click by whitespace or collapse
+  if (target.closest('.collapse-icon')) return;
+
+  const folderPath = folderTitleEl.getAttribute('data-path');
   if (!folderPath) return;
 
   const usedCtrl = evt.ctrlKey;
@@ -35,26 +37,6 @@ export function handleFileExplorerClick(plugin: FolderNotesPlugin, evt: MouseEve
   evt.stopImmediatePropagation();
 
   openFolderNote(plugin, folderNote, evt);
-}
-
-function getFolderTitleInfo(target: HTMLElement): {
-  folderTitleEl: HTMLElement | null;
-  onlyClickedOnFolderTitle: boolean;
-} {
-  const folderTitleEl = target.closest('.nav-folder-title') as HTMLElement | null;
-  const onlyClickedOnFolderTitle = !!target.closest('.nav-folder-title-content');
-  return { folderTitleEl, onlyClickedOnFolderTitle };
-}
-
-function shouldIgnoreClickByWhitespaceOrCollapse(target: HTMLElement): boolean {
-  if (target.closest('.collapse-icon')) return true;
-  return false;
-}
-
-function getValidFolderPath(folderTitleEl: HTMLElement): string | null {
-  const folderPath = folderTitleEl.getAttribute('data-path');
-  if (!folderPath) return null;
-  return folderPath;
 }
 
 function shouldCreateNote(evt: MouseEvent): boolean {
