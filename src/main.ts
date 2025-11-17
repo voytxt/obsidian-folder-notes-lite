@@ -16,7 +16,6 @@ export default class FolderNotesPlugin extends Plugin {
     this.settings = await this.loadData();
     await this.saveData(this.settings);
 
-    document.body.classList.add('folder-notes-plugin');
     overrideRevealInFolder(this);
 
     setInterval(() => {
@@ -30,10 +29,6 @@ export default class FolderNotesPlugin extends Plugin {
       (event: MouseEvent) => handleFileExplorerClick(this, event),
       true,
     );
-  }
-
-  onunload(): void {
-    document.body.classList.remove('folder-notes-plugin');
   }
 }
 
