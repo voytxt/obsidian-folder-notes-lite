@@ -1,4 +1,4 @@
-import { TFile } from 'obsidian';
+import { TFile, View } from 'obsidian';
 import type FolderNotesPlugin from './main';
 import { getFolderNote } from './utils';
 
@@ -31,13 +31,23 @@ function addCSSClassToFileExplorerElement(
   cssClass: string,
   plugin: FolderNotesPlugin,
 ): void {
-  const fileExplorer = plugin.app.workspace.getLeavesOfType('file-explorer')[0].view;
+  // we don't use obsidian-typings, because it's incomplete
+  type FileExplorerView = View & {
+    fileItems: Record<string, { selfEl: HTMLElement }>;
+    tree: { infinityScroll: { rootMargin: number } };
+  };
 
-  // @ts-ignore we need internal bs, so we can actually find stuff properly (with html, we would only be able to find stuff that is shown on the screen)
+  const fileExplorer = plugin.app.workspace.getLeavesOfType('file-explorer')[0]
+    .view as FileExplorerView;
+
+  // we need internal bs, so we can actually find stuff properly (with html, we would only be able to find stuff that is shown on the screen)
   const fileExplorerItem = fileExplorer.fileItems[path];
-  const element = fileExplorerItem?.selfEl ?? fileExplorerItem?.titleEl ?? null;
+  const element: HTMLElement | null = fileExplorerItem?.selfEl ?? null;
 
   if (element === null) throw new Error("FNL: coudln't find the file explorer element");
+
+  // fixes https://github.com/LostPaul/obsidian-folder-notes/issues/274
+  fileExplorer.tree.infinityScroll.rootMargin = 100;
 
   element.addClass(cssClass);
   document.querySelectorAll(`[data-path='${CSS.escape(path)}']`).forEach((item) => {
