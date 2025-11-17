@@ -19,13 +19,10 @@ export default class FolderNotesPlugin extends Plugin {
     document.body.classList.add('folder-notes-plugin');
     overrideRevealInFolder(this);
 
-    this.registerEvent(
-      // TODO: something else than 'layout-change'
-      this.app.workspace.on('layout-change', () => {
-        updateFileTreeTitles(this);
-        updateBreadcrumbs(this);
-      }),
-    );
+    setInterval(() => {
+      updateFileTreeTitles(this);
+      updateBreadcrumbs(this);
+    }, 1000);
 
     this.registerDomEvent(
       document,
