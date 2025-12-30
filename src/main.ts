@@ -14,6 +14,7 @@ export default class FolderNotesPlugin extends Plugin {
 
     // load & save settings
     this.settings = await this.loadData();
+    if (this.settings === null) this.settings = { storageLocation: 'parentFolder' };
     await this.saveData(this.settings);
 
     overrideRevealInFolder(this);
